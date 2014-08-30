@@ -3,6 +3,7 @@
 *.swp
 *.iml
 *.DS_Store
+bin
 
 # sbt specific
 dist/*
