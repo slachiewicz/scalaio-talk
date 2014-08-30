@@ -25,24 +25,28 @@ object MyBuild extends Build {
         "org.scalatest" % "scalatest_2.10" % "2.2.0-M1" % "test",
         
         //Spray
-        "io.spray" % "spray-client" % "1.3.1",
-        "io.spray" %% "spray-json" % "1.2.6",
-        "io.spray" % "spray-routing" % "1.3.1",
-        "io.spray" % "spray-testkit" % "1.3.1",
+        // "io.spray" % "spray-client" % "1.3.1",
+        // "io.spray" %% "spray-json" % "1.2.6",
+        // "io.spray" % "spray-routing" % "1.3.1",
+        // "io.spray" % "spray-testkit" % "1.3.1",
         
-        //Akka
-        "com.typesafe.akka" %% "akka-actor" % "2.3.3",
-        "com.typesafe.akka" %% "akka-testkit" % "2.3.3",
-        "com.typesafe.akka" % "akka-slf4j_2.10" % "2.3.3",
+        // //Akka
+        // "com.typesafe.akka" %% "akka-actor" % "2.3.3",
+        // "com.typesafe.akka" %% "akka-testkit" % "2.3.3",
+        // "com.typesafe.akka" % "akka-slf4j_2.10" % "2.3.3",
         
-        //Joda time
-        "joda-time" % "joda-time" % "2.3",
-        "org.joda" % "joda-convert" % "1.6",
+        // //Joda time
+        // "joda-time" % "joda-time" % "2.3",
+        // "org.joda" % "joda-convert" % "1.6",
         
-        //Geo utils
-        "com.meetup" %% "archery" % "0.3.0",
-        "com.github.hjast" % "geodude_2.10" % "0.2.0",
-        "com.graphhopper" % "graphhopper" % "0.3"
+        // //Geo utils
+        // "com.meetup" %% "archery" % "0.3.0",
+        // "com.github.hjast" % "geodude_2.10" % "0.2.0", 
+        // "com.graphhopper" % "graphhopper" % "0.3",
+
+        //Spark
+        "org.apache.spark" % "spark-core_2.10" % "1.0.2",
+        "org.apache.spark" % "spark-graphx_2.10" % "1.0.2"
       ),
 
       resolvers ++= Seq(
