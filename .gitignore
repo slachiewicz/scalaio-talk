@@ -1,0 +1,29 @@
+*.class
+*.log
+*.swp
+*.iml
+*.DS_Store
+
+# sbt specific
+dist/*
+target/
+*/target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+project/build/target/
+project/plugins/target/
+project/plugins/lib_managed/
+project/plugins/src_managed/
+project/project/target
+BUILD
+
+# Scala-IDE specific
+.scala_dependencies
+
+# Data and scripts
+docs/
+
+.idea
+.idea_modules
