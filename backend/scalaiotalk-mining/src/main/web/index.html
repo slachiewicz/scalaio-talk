@@ -13,8 +13,9 @@
 
 </style>
 <body>
-<script src="http://d3js.org/d3.v3.min.js"></script>
-<script src="http://d3js.org/colorbrewer.v1.min.js"></script>
+<script src="./js/d3.v3.min.js"></script>
+<script src="./js/colorbrewer.v1.min.js"></script>
+<script src="./js/queue.v1.min.js"></script>
 <script>
 
 var width = 1200,
@@ -25,18 +26,73 @@ var svg = d3.select("body").append("svg")
     .attr("height", height);
 
 var force = d3.layout.force()
-    .size([width, height]);
+    .size([width, height])
+    //.linkDistance(400)
+    .linkDistance(20)
+    .charge(100)
+    //.charge(function(v, index) {
+    //  var charge = Math.floor(v.pg_s * 100 - 50);
+    //  return charge;
+    //});
 
-d3.csv("./pg-vertices.csv", function(vertices) {
-  var vById = {};
-  vertices.forEach(function(v) {
-    vById[v.id]=v;
-  });
-  d3.csv("./pg-edges.csv", function(edges) {
-    edges.forEach(function(e){
-      e.source = vById[e.source];
-      e.target = vById[e.target];
+var countTextLines = 0;
+function writeText(text) {
+  countTextLines++;
+  return svg.append("text")
+      .attr("y", 50+countTextLines*17)
+      .attr("x", 50)
+      .attr("font-size", 15)
+      .text(text);
+}
+function removeText(text) {
+  countTextLines--;
+  text.remove();
+}
+
+
+var dataFolder = "./data_"+prompt("city?", "albany");
+
+queue()
+  .defer(d3.csv, dataFolder+"/pg-vertices.csv")
+  .defer(d3.csv, dataFolder+"/pg-edges.csv")
+  .await(function(error, vertices, edges) {
+    var vById = {};
+    var rangePg = d3.extent(vertices, function(v) {return v.pg;});
+    vertices.forEach(function(v) {
+      vById[v.id]=v;
+      v.pg_s = (v.pg-rangePg[0])/(rangePg[1]-rangePg[0]);
     });
+
+    edges.forEach(function(e){
+      var s = e.source;
+      var t = e.target;
+      e.source = vById[s];
+      e.target = vById[t];
+      if (!e.source || !e.target) {
+        console.error("missing ends for edge: " + s + "→" + t);
+        return;
+      }
+
+      // trick: add whatever edge's geo data
+      // to the node
+      if (!e.source.lat || !e.source.lg) {
+        e.source.lat = e.lat;
+        e.source.lg = e["long"];
+      }
+      if (!e.target.lat || !e.target.lg) {
+        e.target.lat = e.lat;
+        e.target.lg = e["long"];
+      }
+    });
+    writeText("#Edges: " + edges.length);
+    edges = edges.filter(function(e) { return e.source && e.target;});
+    writeText("#Edges: " + edges.length);
+
+    writeText("#Vertices: " + vertices.length);
+    vertices = vertices.filter(function(v){
+      return v.lat && v.lg;
+    });
+    writeText("#Vertices valid: " + vertices.length);
 
     // Run the force layout.
     force
@@ -45,58 +101,72 @@ d3.csv("./pg-vertices.csv", function(vertices) {
         .start();
 
     var nRuns = 50; /*ideally #vertices² */
-    for (var i = 0; i < nRuns; ++i) {
-      console.log("running force: " + (100*i/nRuns) + "%");
-      force.tick();
+    var prog = writeText("Start to run force");
+    var q = queue(1);
+    function task(i, cb) {
+      setTimeout(function() {
+        removeText(prog);
+        prog=writeText("running force: " + (100*i/nRuns) + "%");
+        force.tick();
+        cb(null, "tick done");
+      }, 1);
     }
-    force.stop();
+    for (var i = 0; i < nRuns; ++i) {
+      q = q.defer(task, i);
+    }
+    q.await(function() {
+      console.log("all done")
+      force.stop();
+      removeText(prog);
+      writeText("Force ran!");
 
-    // Create the link lines.
-    var link = svg.selectAll(".link")
-        .data(edges)
-      .enter().append("line")
-        .attr("class", "link")
-        .attr("x1", function(d) { return d.source.x; })
-        .attr("y1", function(d) { return d.source.y; })
-        .attr("x2", function(d) { return d.target.x; })
-        .attr("y2", function(d) { return d.target.y; });
-
-    // Create the node circles.
-    var rangePg = d3.extent(vertices, function(v) {return v.pg;});
-    vertices.forEach(function(v) {
-      v.pg_s = (v.pg-rangePg[0])/(rangePg[1]-rangePg[0]);
-    });
-    var node = svg.selectAll(".node")
-        .data(vertices)
-      .enter().append("circle")
-        .attr("class", "node")
-        .attr("cx", function(d) { return d.x; })
-        .attr("cy", function(d) { return d.y; })
-        .attr("fill", function(v) {
-          var col = colorbrewer.RdYlBu[10][Math.floor(colorbrewer.RdYlBu[10].length * v.pg_s)];
-          return col;
-        })
-        .attr("r", function(v) { return Math.abs(Math.floor(30 * v.pg_s)-15); });
-        //.call(force.drag);
-
-    window.tick = function () {
-      link.attr("x1", function(d) { return d.source.x; })
+      // Create the link lines.
+      var link = svg.selectAll(".link")
+          .data(edges)
+        .enter().append("line")
+          .attr("class", "link")
+          .attr("x1", function(d) { return d.source.x; })
           .attr("y1", function(d) { return d.source.y; })
           .attr("x2", function(d) { return d.target.x; })
           .attr("y2", function(d) { return d.target.y; });
 
-      node.attr("cx", function(d) { return d.x; })
-          .attr("cy", function(d) { return d.y; });
-    }
+      // Create the node circles.
+      var node = svg.selectAll(".node")
+          .data(vertices)
+        .enter().append("circle")
+          .attr("class", "node")
+          .attr("cx", function(d) { return d.x; })
+          .attr("cy", function(d) { return d.y; })
+          .attr("fill", function(v) {
+            var col = colorbrewer.RdYlBu[10][Math.floor(colorbrewer.RdYlBu[10].length * v.pg_s)];
+            return col;
+          })
+          .attr("r", 5)
+          //.attr("r", function(v) { return Math.abs(Math.floor(30 * v.pg_s)-15); })
+          .on("click", function(v) {
+            console.log(v.lat + " - " + v.lg)
+          });
+          //.call(force.drag);
 
-    force.on("tick", tick);
+      window.tick = function () {
+        link.attr("x1", function(d) { return d.source.x; })
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; });
 
-    window.runForce = function() {
-      force.start()
-      force.tick();
-      force.stop();
-    }
+        node.attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; });
+      }
+
+      force.on("tick", tick);
+
+    });
   });
-});
+
+window.runForce = function() {
+  force.start()
+  force.tick();
+  force.stop();
+}
 
 </script>

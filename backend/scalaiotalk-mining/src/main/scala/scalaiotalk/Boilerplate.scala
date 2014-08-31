@@ -1,5 +1,7 @@
 package scalaiotalk
 
+import scala.util.Try
+
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext._
@@ -13,7 +15,7 @@ trait Boilerplate extends Serializable {
   @transient val dataIn: (String => String)
 
   def osm = {
-    val csvFile = "london_sections.csv"
+    val csvFile = "albany.osm.pbf.csv"
     val sections_data = sparkContext.textFile(dataIn(csvFile))
     sections_data.name = "section csv"
 
@@ -32,19 +34,23 @@ trait Boilerplate extends Serializable {
       sections_data
         .filter(s => !s.contains("coordinates,uid"))
         .map { l =>
-          val coordsString :: uuid :: Nil = l.split(",").toList
-          val coords = coordsString
-            .split(";")
-            .map(_.trim)
-            .map { x =>
-              val latLong = x.replaceAll("\\s\\s+", " ").split(" ").map(_.trim.toDouble).toList match {
-                case la :: lg :: Nil => (la, lg)
-                case a => throw new Exception("bad value: " + a)
-              }
+          Try {
+            val coordsString :: uuid :: Nil = l.split(",").toList
+            val coords = coordsString
+              .split(";")
+              .map(_.trim)
+              .map { x =>
+                val latLong = x.replaceAll("\\s+", " ").split(" ").map(_.trim.toDouble).toList match {
+                  case la :: lg :: Nil => (la, lg)
+                  case a => throw new Exception("bad value: " + a)
+                }
 
-              (hash(x), latLong)
-            }
-          (hash(uuid), coords)
+                (hash(x), latLong)
+              }
+            (hash(uuid), coords)
+          }.toOption
+        }.collect {
+          case Some(x) => x
         }
     }
 
