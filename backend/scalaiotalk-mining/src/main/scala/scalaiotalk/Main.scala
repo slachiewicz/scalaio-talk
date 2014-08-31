@@ -1,8 +1,8 @@
-//package scalaiotalk
+package scalaiotalk
 
-//object Main extends App {
+object Main extends App {
 
-  def run(csvFile: String){
+  def run(csvFile: String) {
 
     import org.apache.spark._
     import org.apache.spark.rdd.RDD
@@ -11,8 +11,8 @@
     import org.apache.spark.graphx.lib._
 
     val master = "ec2-54-73-198-12.eu-west-1.compute.amazonaws.com"
-    // val sparkConf = new SparkConf(true).setMaster(s"spark://$master:7077").setAppName("scala-io")
-    // val sc = new SparkContext(sparkConf)
+    val sparkConf = new SparkConf(true).setMaster(s"spark://$master:7077").setAppName("scala-io")
+    val sc = new SparkContext(sparkConf)
 
     val hdfs = s"hdfs://$master:9000"
 
@@ -31,7 +31,7 @@
 
     //Load data and split into nodes and id
     val data: RDD[(Long, Array[Long])] = {
-      london
+      sections_data
         .filter(s => !s.contains("coordinates,uid"))
         .map { l =>
           val coordsString :: uuid :: Nil = l.split(",").toList
@@ -79,12 +79,12 @@
       .countByValue()
       .toList
       .sortBy(_._1)
-      .foreach { case (bin, count) => 
-        println(bin + "\t|\t" + ("-"*(count/100).toInt))
+      .foreach {
+        case (bin, count) =>
+          println(bin + "\t|\t" + ("-" * (count / 100).toInt))
       }
 
     pageRank.unpersist()
-
 
     //Page rank
     //Centr
@@ -92,4 +92,4 @@
 
   run("data/london_sections.csv")
 
-//}
+}

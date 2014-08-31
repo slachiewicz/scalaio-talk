@@ -8,10 +8,10 @@ import com.typesafe.sbt.SbtScalariform
 object MyBuild extends Build {
 
   lazy val sharedSettings = {
-    Project.defaultSettings ++ 
-    ScalastylePlugin.Settings ++ 
-    Seq(assemblySettings: _*) ++ 
-    SbtScalariform.scalariformSettings ++ 
+    Project.defaultSettings ++
+    ScalastylePlugin.Settings ++
+    Seq(assemblySettings: _*) ++
+    SbtScalariform.scalariformSettings ++
     Seq(
       name := "Scala IO Talk",
       description := "The scala io talk on graphx and large network analysis",
@@ -19,29 +19,29 @@ object MyBuild extends Build {
       scalaVersion := "2.10.4",
 
       libraryDependencies ++= Seq(
-        
+
         //Testing and logging
         "com.typesafe" %% "scalalogging-slf4j" % "1.1.0",
         "org.scalatest" % "scalatest_2.10" % "2.2.0-M1" % "test",
-        
+
         //Spray
         // "io.spray" % "spray-client" % "1.3.1",
         // "io.spray" %% "spray-json" % "1.2.6",
         // "io.spray" % "spray-routing" % "1.3.1",
         // "io.spray" % "spray-testkit" % "1.3.1",
-        
+
         // //Akka
         // "com.typesafe.akka" %% "akka-actor" % "2.3.3",
         // "com.typesafe.akka" %% "akka-testkit" % "2.3.3",
         // "com.typesafe.akka" % "akka-slf4j_2.10" % "2.3.3",
-        
+
         // //Joda time
         // "joda-time" % "joda-time" % "2.3",
         // "org.joda" % "joda-convert" % "1.6",
-        
+
         // //Geo utils
         // "com.meetup" %% "archery" % "0.3.0",
-        // "com.github.hjast" % "geodude_2.10" % "0.2.0", 
+        // "com.github.hjast" % "geodude_2.10" % "0.2.0",
         // "com.graphhopper" % "graphhopper" % "0.3",
 
         //Spark
@@ -62,9 +62,9 @@ object MyBuild extends Build {
         "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
         "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
       ),
-              
+
       parallelExecution in Test := false, // until scalding 0.9.0 we can't do this
-            
+
       scalacOptions ++= Seq(
           "-unchecked",
           "-deprecation",
@@ -77,6 +77,8 @@ object MyBuild extends Build {
 
       javaOptions += "-Xmx13G",
       javaOptions += "-Dconfig.resources=../lol-dev.conf",
+      // debug serializable crap
+      javaOptions in run += "-Dsun.io.serialization.extendedDebugInfo=true",
 
       publishMavenStyle := true,
       pomIncludeRepository := { x => false },
@@ -94,7 +96,7 @@ object MyBuild extends Build {
       }
     )
   }
-  
+
   def module(name: String, dir: Option[String] = None) = {
       val id = "scalaiotalk-%s".format(name)
       val fdir = "scalaiotalk-%s".format(dir.getOrElse(name))
