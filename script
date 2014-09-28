@@ -115,15 +115,12 @@ ls -la data
 
 ENDSSH
 
-# Upload, setup scala-notebook
-cd /mnt2
-
-zip -r nb.zip scala-notebook/*
+# Upload, setup project (incl scala-notebook)
 ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
 cd /mnt2
 
-unzip nb.zip
-rm nb.zip
+git clone https://github.com/randhindi/scalaio-talk.git
+cd scalaio-talk
 
 wget https://dl.bintray.com/sbt/native-packages/sbt/0.13.6/sbt-0.13.6.zip 
 ls -la 
@@ -136,8 +133,7 @@ ENDSSH
 ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
 cd /mnt2
 
-git clone https://github.com/randhindi/scalaio-talk.git
-cd scalaio-talk
+cd scalaio-talk/backend
 /mnt2/sbt/bin/sbt publishLocal
 
 
@@ -145,7 +141,7 @@ cd scalaio-talk
 ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
 cd /mnt2
 
-cd scala-notebook
+cd scalaio-talk/scala-notebook
 . /root/spark/conf/spark-env.sh
 export SPARK_EXECUTOR_MEMORY=13G
 sh -c 'nohup /mnt2/sbt/bin/sbt "server/run --disable_security" > /dev/null 2>&1 &'
@@ -160,5 +156,8 @@ ssh -i ~/.ssh/scalaio-osm.pem -L 8899:localhost:8899 root@$MASTER
 *in the browser*
 http://localhost:8899
 
-
+*in the notebook*
+Add a jar entry in the spark context pointing to "/root/.ivy2/local/default/backend_2.10/0.1-SNAPSHOT/jars/backend_2.10.jar"
+Stop the sparkContext by running `sparkContext.stop()`
+Refresh the sparkContext, and thus importing this jar in its list
 

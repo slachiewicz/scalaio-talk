@@ -114,7 +114,8 @@ object NotebookBuild extends Build {
 
       libraryDependencies ++= Seq(
         sparkRepl,
-        sparkGraph
+        sparkGraph,
+        scalaioTalk
       )
     )
 
@@ -144,7 +145,8 @@ object NotebookBuild extends Build {
 
       libraryDependencies ++= Seq(
         sparkRepl,
-        sparkGraph
+        sparkGraph,
+        scalaioTalk
       ),
 
       libraryDependencies ++= Seq(
@@ -160,6 +162,7 @@ object NotebookBuild extends Build {
 
     val sparkRepl            = "org.apache.spark"          %%         "spark-repl"          %      "1.1.0"
     val sparkGraph           = "org.apache.spark"          %%         "spark-graphx"        %      "1.1.0"
+    val scalaioTalk          = "default"                   %%           "backend"           %   "0.1-SNAPSHOT"
     val commonsIO            = "org.apache.commons"        %          "commons-io"          %      "1.3.2"
     val commonsHttp          = "org.apache.httpcomponents" %          "httpclient"          %      "4.3.4"
     val slf4jLog4j           = "org.slf4j"                 %         "slf4j-log4j12"        %      "1.7.7"
