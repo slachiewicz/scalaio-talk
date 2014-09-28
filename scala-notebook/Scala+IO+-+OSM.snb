@@ -1,0 +1,66 @@
+{
+  "metadata":{
+    "name":"Scala IO - OSM",
+    "user_save_timestamp":"2014-09-28T21:34:36.587Z",
+    "auto_save_timestamp":"2014-09-28T21:33:43.920Z"
+  },
+  "worksheets":[{
+    "cells":[{
+      "cell_type":"code",
+      "input":"//warm up\nimport scala.util.Try\n\nimport java.util.Date",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":7,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"// the most spread class/object name in dev's world\nobject Util {\n  type SectionId = Long\n  type PointId = Long\n  type LatLong = (Double, Double)\n  type SectionData = Array[(PointId, LatLong)]\n  type Cross = Iterable[(LatLong, SectionId)]\n\n  def hash(string: String): Long = {\n    var h: Long = 1125899906842597L // prime\n    val len: Long = string.length\n    string.foreach(c => h = 31 * h + c)\n    h\n  }\n}\nimport Util._\n",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":5,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"sparkContext.getConf.toDebugString",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":1,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"val usa = \"hdfs://ec2-54-171-51-74.eu-west-1.compute.amazonaws.com:9000/data/usa.csv\"",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":3,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"// definition of the process\nclass OSM(csvFile: String)(implicit sparkContext: SparkContext, dataIn: (String => String)) {\n  import org.apache.spark._\n  import org.apache.spark.rdd.RDD\n  import org.apache.spark.SparkContext._\n  import org.apache.spark.graphx._\n  import org.apache.spark.graphx.lib._\n\n  lazy val rawSections: RDD[String] = {\n    val sectionsDataString = sparkContext.textFile(dataIn(csvFile))\n    sectionsDataString.name = \"section csv\"\n    sectionsDataString\n  }\n\n  // VertexRDD[T] is actually a RDD[VertexId, T]\n  // in this case the VertexId is the SectionId (graph's dual)\n  lazy val vertices: VertexRDD[SectionData] = {\n    val stringToLatLong = (x: String) => {\n      val clean = x.replaceAll(\"\\\\s+\", \" \")\n      val latLongList: List[Double] = clean.split(\" \").map(_.trim.toDouble).toList\n      val latLong: LatLong = latLongList match {\n        case la :: lg :: Nil => (la, lg)\n        case a => throw new Exception(\"bad value: \" + a)\n      }\n      latLong\n    }\n\n    val stringToSectionData = (coordsString: String) => {\n      val coordsList: Array[String] = coordsString.split(\";\").map(_.trim)\n      val section: SectionData = coordsList.map { x =>\n        val latLong: LatLong = stringToLatLong(x)\n        // keep the hash of the line as identifier of the POINT\n        //  → better (more efficient) than a string\n        // latLong is the coordinate of the vertex\n        val vertexId: PointId = hash(x)\n        (vertexId, latLong)\n      }\n      section\n    }\n\n    val vertexData =\n      rawSections\n        .filter(s => !s.contains(\"coordinates,uid\")) // skip header line\n        .map { l =>\n          Try {\n            val coordsString :: uuid :: bool :: Nil = l.split(\",\").toList\n            val section = stringToSectionData(coordsString)\n            // keep the hash of the section's uuid (same reason as for the point)\n            // coords is the list of coordinates participating to this section\n            val SectionId: SectionId = hash(uuid)\n            (SectionId, section)\n          }.toOption\n        }.collect {\n          case Some(x) => x\n        }\n\n    val vertexRdd = VertexRDD { vertexData }\n    vertexRdd\n  }\n\n  lazy val edges: RDD[Edge[LatLong]] = {\n    val insideOut: ((VertexId, SectionData)) => TraversableOnce[(PointId, (LatLong, SectionId))] = (v: (VertexId, SectionData)) => {\n      val (sectionId, coords) = v\n      coords.map {\n        case (pointUuid, latLong) =>\n          (pointUuid, (latLong, sectionId))\n      }\n    }\n    val points: RDD[(PointId, (LatLong, SectionId))] = vertices flatMap insideOut\n\n    val crossingPoints: RDD[Cross] = points.groupByKey // group by point's uuid\n      // get rid of the point uuid (the PointId is not needed)\n      .values\n      // remove all sections that are only crossing a single point\n      .filter(_.size > 1)\n\n    crossingPoints.flatMap { sections =>\n      val pairOfCrossPoints = sections.toList.combinations(2)\n      pairOfCrossPoints.map(_.sortBy(_._2)) // sort by section id => to avoid duplicates\n        .flatMap {\n          case (latLong, sectinoId1) :: (_, sectinoId2) :: Nil =>\n            // *** /!\\ *** latLongs are actually the same\n            List(\n              Edge(sectinoId1, sectinoId2, latLong),\n              Edge(sectinoId2, sectinoId1, latLong)\n            )\n          case _ =>\n            throw new Exception(\"Should not happen!\")\n        }\n    }\n    // ↓↓↓ SHOULDN'T BE NEEDED ANYMORE \n    //.distinct\n  }\n\n  lazy val graph = Graph[Array[(SectionId, LatLong)], LatLong](vertices, edges)\n\n  //Calculate page rank\n  lazy val pageRank = PageRank.run(graph, 5)\n  lazy val pageRankValues = pageRank.vertices.map(_._2)\n  lazy val minRank = pageRankValues.min\n  lazy val maxRank = pageRankValues.max\n\n  lazy val pageRankHist: List[String] = {\n    pageRankValues\n      .map(c => math.floor(100 * (c - minRank) / (maxRank - minRank)))\n      .countByValue()\n      .toList\n      .sortBy(_._1)\n      .map {\n        case (bin, count) => s\"$bin,$count\"\n      }\n  }\n\n  // pageRanks (vertices) and all edges\n  lazy val asStrings: (RDD[String], RDD[String]) = {\n    //pg-vertices.csv\n    val v = pageRank.vertices.map {\n      case (vId, pg) => s\"$vId,$pg\"\n    }\n\n    //pg-edges.csv\n    val e = edges.map {\n      case Edge(sId, tId, (lat, long)) =>\n        s\"$sId,$tId,$lat,$long\"\n    }\n    (v, e)\n  }\n\n  lazy val run: Unit = {\n    def time(msg: String, b: => Any) {\n      val now = new java.util.Date()\n      val m = s\">>> $msg ($now)\"\n      println(\"*\" * m.size)\n      println(m)\n      b\n      val end = new java.util.Date()\n      println(s\"$msg ($end → took ${end.getTime - now.getTime} ms)<<<\")\n      println(\"-\" * m.size)\n    }\n    time(s\"Registering $csvFile as an RDD of Serializabletring\", rawSections)\n    println(s\"###  Number of lines ${rawSections.count}\")\n\n    time(\"Creating RDD of vertices\", vertices)\n    println(s\"###  Number of vertices ${vertices.count}\")\n\n    time(\"Creating RDD of edges\", edges)\n    println(s\"###  Number of edges ${edges.count}\")\n\n    time(\"Creating the graph\", graph)\n\n    time(\"Computing the pageRank\", pageRank)\n    println(s\"###  Number of vertices in pageRank result ${pageRank.vertices.count}\")\n  }\n}",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":10,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"val dataIn = (s:String) => s\"hdfs://ec2-54-171-51-74.eu-west-1.compute.amazonaws.com:9000/data/$s\"\nval osm = new OSM(\"usa.csv\")(sparkContext, dataIn)",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":13,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"def exec = {\n  osm.run\n  val (pg, es) = osm.asStrings\n  val id = java.util.UUID.randomUUID.toString\n  val pgFile = dataIn(s\"page-rank-result-$id.csv\")\n  val esFile = dataIn(s\"graph-edges-$id.csv\")\n  println(s\"Saving ${pg.count} page rank data to file $pgFile \")\n  pg.saveAsTextFile(pgFile)\n  println(s\"Saving ${es.count} graph edges to file $esFile\")\n  es.saveAsTextFile(esFile)\n  println(\"DONE\")\n}",
+      "language":"scala",
+      "collapsed":false,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"",
+      "language":"scala",
+      "collapsed":true,
+      "outputs":[]
+    }]
+  }],
+  "autosaved":[],
+  "nbformat":3
+}

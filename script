@@ -132,6 +132,15 @@ rm sbt-0.13.6.zip
 
 ENDSSH
 
+# Setup scala io project
+ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
+cd /mnt2
+
+git clone https://github.com/randhindi/scalaio-talk.git
+cd scalaio-talk
+/mnt2/sbt/bin/sbt publishLocal
+
+
 # Start scala-notebook 
 ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
 cd /mnt2
@@ -144,7 +153,7 @@ sh -c 'nohup /mnt2/sbt/bin/sbt "server/run --disable_security" > /dev/null 2>&1 
 ENDSSH
 
 
-# Open notebook in browser
+# Open Notebook in browser
 *in a term*
 ssh -i ~/.ssh/scalaio-osm.pem -L 8899:localhost:8899 root@$MASTER
 
