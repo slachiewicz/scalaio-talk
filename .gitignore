@@ -5,6 +5,24 @@
 *.DS_Store
 bin
 
+# env setup
+spark*
+
+# notebook
+scala-notebook/.idea/
+scala-notebook/.idea_modules/
+scala-notebook/.project
+scala-notebook/.settings
+scala-notebook/.classpath
+scala-notebook/.ensime
+scala-notebook/.ensime_lucene
+scala-notebook/.akka-cookie
+scala-notebook/project/target/
+scala-notebook/target/
+scala-notebook/logs/
+scala-notebook/*/target/
+
+
 # sbt specific
 dist/*
 target/

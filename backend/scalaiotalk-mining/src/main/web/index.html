@@ -16,32 +16,47 @@
 <script src="./js/d3.v3.min.js"></script>
 <script src="./js/colorbrewer.v1.min.js"></script>
 <script src="./js/queue.v1.min.js"></script>
-<script>
+<script src="./js/topojson.v1.min.js"></script>
 
+<script>
 var width = 1200,
     height = 640;
 
-var svg = d3.select("body").append("svg")
+var svg1 = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
+
+var svg2 = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var fg = svg1.append("g");
 
 var force = d3.layout.force()
     .size([width, height])
     //.linkDistance(400)
-    .linkDistance(20)
-    .charge(100)
+    .linkDistance(100)
+    .charge(1)
+    //.gravity(2)
+    .gravity(function(v, index) {
+      var charge = Math.abs(Math.floor(4 * v.pg_s)-2);;
+      return charge;
+    })
+    //.charge(100)
     //.charge(function(v, index) {
-    //  var charge = Math.floor(v.pg_s * 100 - 50);
+    //  var charge = Math.floor(v.pg_s * 5 - 2.5);
     //  return charge;
     //});
 
 var countTextLines = 0;
 function writeText(text) {
   countTextLines++;
-  return svg.append("text")
-      .attr("y", 50+countTextLines*17)
+  return svg1.append("text")
+      .attr("y", 50+countTextLines*10)
       .attr("x", 50)
-      .attr("font-size", 15)
+      .attr("font-size", 8)
+      .attr("color", "blue")
+      .attr("font-weight", "bolder")
       .text(text);
 }
 function removeText(text) {
@@ -50,7 +65,8 @@ function removeText(text) {
 }
 
 
-var dataFolder = "./data_"+prompt("city?", "albany");
+var city = prompt("city?", "albany");
+var dataFolder = "./data_"+city;
 
 queue()
   .defer(d3.csv, dataFolder+"/pg-vertices.csv")
@@ -62,6 +78,8 @@ queue()
       vById[v.id]=v;
       v.pg_s = (v.pg-rangePg[0])/(rangePg[1]-rangePg[0]);
     });
+    console.log("vertices cleaned")
+
 
     edges.forEach(function(e){
       var s = e.source;
@@ -84,15 +102,18 @@ queue()
         e.target.lg = e["long"];
       }
     });
+    console.log("edges cleaned")
     writeText("#Edges: " + edges.length);
     edges = edges.filter(function(e) { return e.source && e.target;});
     writeText("#Edges: " + edges.length);
+    console.log("edges imputed")
 
     writeText("#Vertices: " + vertices.length);
     vertices = vertices.filter(function(v){
       return v.lat && v.lg;
     });
     writeText("#Vertices valid: " + vertices.length);
+    console.log("vertices imputed")
 
     // Run the force layout.
     force
@@ -100,28 +121,30 @@ queue()
         .links(edges)
         .start();
 
-    var nRuns = 50; /*ideally #vertices² */
+    var nRuns = 100; /*ideally #vertices² */
     var prog = writeText("Start to run force");
     var q = queue(1);
     function task(i, cb) {
       setTimeout(function() {
+        var msg = "running force: " + (100*i/nRuns) + "%";
+        console.log(msg);
         removeText(prog);
-        prog=writeText("running force: " + (100*i/nRuns) + "%");
+        prog=writeText(msg);
         force.tick();
+        console.log("tick done");
         cb(null, "tick done");
       }, 1);
     }
-    for (var i = 0; i < nRuns; ++i) {
+    for (var i = 0; i < nRuns ; ++i) {
       q = q.defer(task, i);
     }
     q.await(function() {
-      console.log("all done")
       force.stop();
       removeText(prog);
       writeText("Force ran!");
 
       // Create the link lines.
-      var link = svg.selectAll(".link")
+      var link = fg.selectAll(".link")
           .data(edges)
         .enter().append("line")
           .attr("class", "link")
@@ -131,7 +154,7 @@ queue()
           .attr("y2", function(d) { return d.target.y; });
 
       // Create the node circles.
-      var node = svg.selectAll(".node")
+      var node = fg.selectAll(".node")
           .data(vertices)
         .enter().append("circle")
           .attr("class", "node")
@@ -141,8 +164,8 @@ queue()
             var col = colorbrewer.RdYlBu[10][Math.floor(colorbrewer.RdYlBu[10].length * v.pg_s)];
             return col;
           })
-          .attr("r", 5)
-          //.attr("r", function(v) { return Math.abs(Math.floor(30 * v.pg_s)-15); })
+          //.attr("r", 2)
+          .attr("r", function(v) { return Math.abs(Math.floor(10 * v.pg_s)-5); })
           .on("click", function(v) {
             console.log(v.lat + " - " + v.lg)
           });
@@ -159,6 +182,80 @@ queue()
       }
 
       force.on("tick", tick);
+
+
+      var params= {
+        albany: {
+          center: [-73.8, 42.65],
+          scale: 300000
+        },
+        london: {
+          center: [-0.078, 51.505],
+          scale: 400000
+        },
+        beaver: {
+          center: [-122.81, 45.490],
+          scale: 200000
+        }
+      }
+
+      // MAP
+      var projection = d3.geo.mercator()
+          .center(params[city].center)
+          .scale(params[city].scale)
+          //.rotate([-180,0])
+          .translate([width / 2, height / 2]);
+
+      var path = d3.geo.path()
+          .projection(projection);
+
+      //svg.append("rect")
+        //.attr("class", "background")
+        //.attr("x", width/2)
+        //.attr("width", width/2)
+        //.attr("height", height)
+        //.on("click", clicked);
+
+      var g = svg2.append("g")
+                //.attr("transform", "translate("+width / 2+", 0)");
+
+      d3.json("./js/world-110m2.json", function(error, topology) {
+        g.selectAll("path")
+              .data(topojson.feature(topology, topology.objects.countries).features)
+            .enter()
+              .append("path")
+              .attr("d", path)
+              .attr("fill", "#333")
+
+        g.selectAll("circles.points")
+          .data(vertices)
+            .enter()
+              .append("circle")
+              .attr("r",function(v) { return Math.abs(Math.floor(10 * v.pg_s)-5); })
+              .attr("fill", function(v) {
+                var col = colorbrewer.RdYlBu[10][Math.floor(colorbrewer.RdYlBu[10].length * v.pg_s)];
+                return col;
+              })
+              //.attr("fill", "#F00")
+              .attr("transform", function(d) {
+                return "translate(" + projection([d.lat, d.lg]) + ")";
+              });
+        // zoom and pan
+        var zoom = d3.behavior.zoom()
+            .on("zoom",function() {
+                g.attr("transform","translate("+
+                    d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+                g.selectAll("circle")
+                    .attr("d", path.projection(projection));
+                g.selectAll("path")
+                    .attr("d", path.projection(projection));
+
+          });
+
+        g.call(zoom)
+      });
+
+
 
     });
   });

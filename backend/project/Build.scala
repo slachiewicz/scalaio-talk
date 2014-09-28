@@ -45,8 +45,8 @@ object MyBuild extends Build {
         // "com.graphhopper" % "graphhopper" % "0.3",
 
         //Spark
-        "org.apache.spark" % "spark-core_2.10" % "1.0.2",
-        "org.apache.spark" % "spark-graphx_2.10" % "1.0.2"
+        "org.apache.spark" % "spark-core_2.10" % "1.1.0",
+        "org.apache.spark" % "spark-graphx_2.10" % "1.1.0"
       ),
 
       resolvers ++= Seq(
