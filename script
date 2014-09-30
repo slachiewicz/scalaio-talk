@@ -1,12 +1,12 @@
 # USA data is in S3: s3://scalaio_osm/usa.csv
 
-# DL default spark dist (hadoop 1) : 
-curl http://d3kbcqa49mib13.cloudfront.net/spark-1.1.0-bin-hadoop1.tgz > spark.tgz
+# DL default spark dist (hadoop 2 !!! because of https://issues.apache.org/jira/browse/SPARK-2075) : 
+curl http://d3kbcqa49mib13.cloudfront.net/spark-1.1.0-bin-hadoop2.4.tgz > spark.tgz
 tar xvzf spark.tgz
 rm spark.tgz
 
 # Head to spark ec2
-cd spark*1
+cd spark*2.4
 cd ec2
 export AWS_ACCESS_KEY_ID=
 export AWS_SECRET_ACCESS_KEY=
@@ -17,6 +17,7 @@ export AWS_SECRET_ACCESS_KEY=
               --region="eu-west-1" \
               --instance-type="m3.xlarge" \
               --no-ganglia \
+              --hadoop-major-version="2" \
               -s 2 launch scalaio-osm
 
 # Export master
@@ -29,7 +30,7 @@ $MASTER
 ********"
 
 # Install S3cmd and put data in hdfs
-*Update with access_key and secret_key*
+******** Update with access_key and secret_key ***********
 
 ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
 
@@ -41,7 +42,7 @@ python setup.py install
 
 cat <<KEY > ~/.s3cfg
 [default]
-access_key = /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+access_key = $AWS_ACCESS_KEY_ID
 access_token = 
 add_encoding_exts = 
 add_headers = 
@@ -89,7 +90,7 @@ recursive = False
 recv_chunk = 4096
 reduced_redundancy = False
 restore_days = 1
-secret_key = /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\
+secret_key = $AWS_SECRET_ACCESS_KEY
 send_chunk = 4096
 server_side_encryption = False
 simpledb_host = sdb.amazonaws.com
@@ -136,7 +137,7 @@ cd scalaio-talk/backend
 /mnt2/sbt/bin/sbt publishLocal
 
 # sync the jar in all spark nodes' lib folder
-cp 	 /root/spark/lib
+cp /root/.ivy2/local/scalaiotalk-mining/scalaiotalk-mining_2.10/0.1/jars/scalaiotalk-mining_2.10.jar /root/spark/lib
 cd /root/spark-ec2/
 ./copy-dir /root/spark/lib/
 
@@ -147,11 +148,17 @@ ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
 cd /mnt2
 cd scalaio-talk/scala-notebook
 . /root/spark/conf/spark-env.sh
-export SPARK_EXECUTOR_MEMORY=13G
+export SPARK_EXECUTOR_MEMORY=12G
 sh -c 'nohup /mnt2/sbt/bin/sbt "server/run --disable_security" > /var/log/notebook.log 2>&1 &'
 
 ENDSSH
 
+## Check the progress
+* log to the node
+ssh  -L 8899:localhost:8899 -i ~/.ssh/scalaio-osm.pem root@$MASTER
+
+* tail the output
+tail -f /var/log/notebook.log
 
 # Open Notebook in browser
 *in a term*
@@ -159,3 +166,7 @@ ssh -i ~/.ssh/scalaio-osm.pem -L 8899:localhost:8899 root@$MASTER
 
 *in the browser*
 http://localhost:8899
+
+
+# Destroy
+./spark-ec2 -k scalaio-osm  -i ~/.ssh/scalaio-osm.pem  --region="eu-west-1" destroy  scalaio-osm
