@@ -17,8 +17,7 @@ export AWS_SECRET_ACCESS_KEY=
               --region="eu-west-1" \
               --instance-type="m3.xlarge" \
               --no-ganglia \
-              --ganglia="off"
-              -s 4 launch scalaio-osm
+              -s 2 launch scalaio-osm
 
 # Export master
 export MASTER=$(./spark-ec2 -k scalaio-osm  -i ~/.ssh/scalaio-osm.pem  --region="eu-west-1" get-master scalaio-osm | grep ec2)
@@ -29,7 +28,7 @@ $MASTER
 ********
 ********"
 
-# Install S3cmd and put data in ec2
+# Install S3cmd and put data in hdfs
 *Update with access_key and secret_key*
 
 ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
@@ -120,7 +119,7 @@ ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
 cd /mnt2
 
 git clone https://github.com/randhindi/scalaio-talk.git
-cd scalaio-talk
+
 
 wget https://dl.bintray.com/sbt/native-packages/sbt/0.13.6/sbt-0.13.6.zip 
 ls -la 
@@ -136,15 +135,20 @@ cd /mnt2
 cd scalaio-talk/backend
 /mnt2/sbt/bin/sbt publishLocal
 
+# sync the jar in all spark nodes' lib folder
+cp 	 /root/spark/lib
+cd /root/spark-ec2/
+./copy-dir /root/spark/lib/
+
+ENDSSH
 
 # Start scala-notebook 
 ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
 cd /mnt2
-
 cd scalaio-talk/scala-notebook
 . /root/spark/conf/spark-env.sh
 export SPARK_EXECUTOR_MEMORY=13G
-sh -c 'nohup /mnt2/sbt/bin/sbt "server/run --disable_security" > /dev/null 2>&1 &'
+sh -c 'nohup /mnt2/sbt/bin/sbt "server/run --disable_security" > /var/log/notebook.log 2>&1 &'
 
 ENDSSH
 
@@ -155,9 +159,3 @@ ssh -i ~/.ssh/scalaio-osm.pem -L 8899:localhost:8899 root@$MASTER
 
 *in the browser*
 http://localhost:8899
-
-*in the notebook*
-Add a jar entry in the spark context pointing to "/root/.ivy2/local/default/backend_2.10/0.1-SNAPSHOT/jars/backend_2.10.jar"
-Stop the sparkContext by running `sparkContext.stop()`
-Refresh the sparkContext, and thus importing this jar in its list
-

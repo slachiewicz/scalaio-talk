@@ -2,7 +2,7 @@
   "metadata":{
     "name":"Scala IO - OSM",
     "user_save_timestamp":"2014-09-28T21:34:36.587Z",
-    "auto_save_timestamp":"2014-09-28T21:33:43.920Z"
+    "auto_save_timestamp":"2014-09-30T00:11:56.772Z"
   },
   "worksheets":[{
     "cells":[{
@@ -61,6 +61,48 @@
       "outputs":[]
     }]
   }],
-  "autosaved":[],
+  "autosaved":[{
+    "cells":[{
+      "cell_type":"code",
+      "input":"sparkContext.stop()\njars = (\"/mnt2/scalaio-talk/backend/scalaiotalk-mining/target/scala-2.10/scalaiotalk-mining_2.10-0.1.jar\" :: jars.toList).toArray\nreset()",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":15,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"sparkContext.getConf.toDebugString",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":16,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"val masterHost = System.getenv(\"MASTER\").drop(\"spark://\".size).takeWhile(_ != ':').mkString",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":11,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"import scalaiotalk._\nval dataIn = (s:String) => s\"hdfs://$masterHost:9000/data/$s\"\nval osm = new OSM(\"usa.csv\")(sparkContext, dataIn)",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":12,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"def exec = {\n  osm.run\n  val (pg, es) = osm.asStrings\n  val id = java.util.UUID.randomUUID.toString\n  val pgFile = dataIn(s\"page-rank-result-$id.csv\")\n  val esFile = dataIn(s\"graph-edges-$id.csv\")\n  println(s\"Saving ${pg.count} page rank data to file $pgFile \")\n  pg.saveAsTextFile(pgFile)\n  println(s\"Saving ${es.count} graph edges to file $esFile\")\n  es.saveAsTextFile(esFile)\n  println(\"DONE\")\n}",
+      "language":"scala",
+      "collapsed":false,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"",
+      "language":"scala",
+      "collapsed":true,
+      "outputs":[]
+    }]
+  }],
   "nbformat":3
 }
