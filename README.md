@@ -1,16 +1,20 @@
 Scala IO talk
 -------------
 
-# USA data is in S3: s3://scalaio_osm/usa.csv
+## USA data is in S3 
+s3://scalaio_osm/usa.csv
 
-# DL default spark dist (hadoop 2 !!! because of https://issues.apache.org/jira/browse/SPARK-2075) : 
+## DL default spark dist :
+
+*We use hadoop 2 !!! because of https://issues.apache.org/jira/browse/SPARK-2075*
+
 ```
 curl http://d3kbcqa49mib13.cloudfront.net/spark-1.1.0-bin-hadoop2.4.tgz > spark.tgz
 tar xvzf spark.tgz
 rm spark.tgz
 ```
 
-# Head to spark ec2
+## Head to spark ec2
 ```
 cd spark*2.4
 cd ec2
@@ -27,7 +31,8 @@ export AWS_SECRET_ACCESS_KEY=
               -s 2 launch scalaio-osm
 ```
 
-# Export master
+## Export master
+```
 export MASTER=$(./spark-ec2 -k scalaio-osm  -i ~/.ssh/scalaio-osm.pem  --region="eu-west-1" get-master scalaio-osm | grep ec2)
 
 echo "********
@@ -35,8 +40,9 @@ echo "********
 $MASTER
 ********
 ********"
+```
 
-# Install S3cmd and put data in hdfs
+## Install S3cmd and put data in hdfs
 ```
 ssh -o SendEnv -i ~/.ssh/scalaio-osm.pem root@$MASTER "
 
@@ -121,7 +127,7 @@ ls -la data
 "
 ```
 
-# Upload, setup project (incl scala-notebook)
+## Upload, setup project (incl scala-notebook)
 ```
 ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
 cd /mnt2
@@ -136,7 +142,7 @@ rm sbt-0.13.6.zip
 ENDSSH
 ```
 
-# Setup scala io project
+## Setup scala io project
 ```
 ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
 cd /mnt2
@@ -152,7 +158,7 @@ cd /root/spark-ec2/
 ENDSSH
 ```
 
-# Start scala-notebook 
+## Start scala-notebook 
 ```
 ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
 cd /mnt2
@@ -164,16 +170,16 @@ sh -c 'nohup /mnt2/sbt/bin/sbt "server/run --disable_security" > /var/log/notebo
 ENDSSH
 ```
 
-## Check the progress
-### log to the node
+### Check the progress
+#### log to the node
 ```
 ssh  -L 8899:localhost:8899 -i ~/.ssh/scalaio-osm.pem root@$MASTER
 ```
-### tail the output
+#### tail the output
 ```
 tail -f /var/log/notebook.log
 ```
-# Open Notebook in browser
+## Open Notebook in browser
 ### in a term
 ```
 ssh -i ~/.ssh/scalaio-osm.pem -L 8899:localhost:8899 root@$MASTER
