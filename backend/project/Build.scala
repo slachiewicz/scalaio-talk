@@ -46,7 +46,10 @@ object MyBuild extends Build {
 
         //Spark
         "org.apache.spark" % "spark-core_2.10" % "1.1.0",
-        "org.apache.spark" % "spark-graphx_2.10" % "1.1.0"
+        "org.apache.spark" % "spark-graphx_2.10" % "1.1.0",
+
+        //Hadoop 2.0.0 CDH 4.2 to cope with ec2 deployment
+        "org.apache.hadoop" % "hadoop-client" % "2.0.0-mr1-cdh4.2.0"
       ),
 
       resolvers ++= Seq(
@@ -60,7 +63,9 @@ object MyBuild extends Build {
         "Spray repo" at "http://repo.spray.io/",
         "bintray/meetup" at "http://dl.bintray.com/meetup/maven",
         "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
-        "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
+        "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
+        "Cloudera Repository" at "https://repository.cloudera.com/artifactory/cloudera-repos/"
+
       ),
 
       parallelExecution in Test := false, // until scalding 0.9.0 we can't do this

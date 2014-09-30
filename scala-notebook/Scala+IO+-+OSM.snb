@@ -2,7 +2,7 @@
   "metadata":{
     "name":"Scala IO - OSM",
     "user_save_timestamp":"2014-09-28T21:34:36.587Z",
-    "auto_save_timestamp":"2014-09-30T00:11:56.772Z"
+    "auto_save_timestamp":"2014-09-30T20:33:21.264Z"
   },
   "worksheets":[{
     "cells":[{
@@ -64,31 +64,38 @@
   "autosaved":[{
     "cells":[{
       "cell_type":"code",
-      "input":"sparkContext.stop()\njars = (\"/mnt2/scalaio-talk/backend/scalaiotalk-mining/target/scala-2.10/scalaiotalk-mining_2.10-0.1.jar\" :: jars.toList).toArray\nreset()",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":15,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"sparkContext.getConf.toDebugString",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":16,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"val masterHost = System.getenv(\"MASTER\").drop(\"spark://\".size).takeWhile(_ != ':').mkString",
+      "input":"sparkContext.stop()\njars = (\"/root/spark/lib/scalaiotalk-mining_2.10.jar\" :: jars.toList).toArray\n//resolveAndAddToJars(\"org.apache.hadoop\", \"hadoop-client\", \"2.0.0-cdh4.2.0\")\nreset()",
       "language":"scala",
       "collapsed":false,
       "prompt_number":11,
       "outputs":[]
     },{
       "cell_type":"code",
-      "input":"import scalaiotalk._\nval dataIn = (s:String) => s\"hdfs://$masterHost:9000/data/$s\"\nval osm = new OSM(\"usa.csv\")(sparkContext, dataIn)",
+      "input":"sparkContext.getConf.toDebugString",
       "language":"scala",
       "collapsed":false,
       "prompt_number":12,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"val masterHost = System.getenv(\"MASTER\").drop(\"spark://\".size).takeWhile(_ != ':').mkString",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":13,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"import scalaiotalk._\nval dataIn = (s:String) => s\"hdfs://$masterHost:9000/data/$s\"\nval osm = new OSM(\"usa.csv\")(sparkContext, dataIn)",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":14,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"osm.rawSections.count()",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":16,
       "outputs":[]
     },{
       "cell_type":"code",

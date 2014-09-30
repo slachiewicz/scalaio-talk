@@ -31,6 +31,8 @@ def reset(assign:Boolean=true):SparkContext = {
   conf.setMaster(Option(sparkMaster).getOrElse("local[*]"))
       .setAppName("Notebook")
       .set("spark.repl.class.uri", uri)
+      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .set("spark.kryo.registrator", "org.apache.spark.graphx.GraphKryoRegistrator")
   if (execUri != null) {
     conf.set("spark.executor.uri", execUri)
   }
@@ -53,6 +55,12 @@ object Repos {
     "default",
     "http://repo1.maven.org/maven2/"
   )
+
+  val cloudera = new RemoteRepository(
+    "cloudera",
+    "default",
+    "https://repository.cloudera.com/artifactory/cloudera-repos/"
+  )
 }
 
 def resolveAndAddToJars(group:String, artifact:String, version:String) = {
@@ -70,7 +78,7 @@ def resolveAndAddToJars(group:String, artifact:String, version:String) = {
 
   repo.mkdirs
 
-  val remotes = List(Repos.central)
+  val remotes = List(Repos.cloudera, Repos.central)
   val deps:Set[Artifact] =  new Aether(remotes, repo).resolve(
                               new DefaultArtifact(group, artifact, "", "jar", version), 
                               "runtime"

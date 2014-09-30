@@ -28,7 +28,8 @@ object NotebookBuild extends Build {
     resolvers in ThisBuild ++= Seq(
       Resolver.typesafeRepo("releases"),
       Resolver.typesafeIvyRepo("releases"),
-      Resolver.typesafeIvyRepo("snapshots")
+      Resolver.typesafeIvyRepo("snapshots"),
+      "Cloudera Repository" at "https://repository.cloudera.com/artifactory/cloudera-repos/"
     ),
 
     compileOrder := CompileOrder.Mixed,
@@ -115,6 +116,7 @@ object NotebookBuild extends Build {
       libraryDependencies ++= Seq(
         sparkRepl,
         sparkGraph,
+        hadoopClient,
         scalaioTalk
       )
     )
@@ -146,6 +148,7 @@ object NotebookBuild extends Build {
       libraryDependencies ++= Seq(
         sparkRepl,
         sparkGraph,
+        hadoopClient,
         scalaioTalk
       ),
 
@@ -162,6 +165,7 @@ object NotebookBuild extends Build {
 
     val sparkRepl            = "org.apache.spark"          %%         "spark-repl"          %      "1.1.0"
     val sparkGraph           = "org.apache.spark"          %%         "spark-graphx"        %      "1.1.0"
+    val hadoopClient         = "org.apache.hadoop"         %          "hadoop-client"       %  "2.0.0-mr1-cdh4.2.0"
     val scalaioTalk          = "scalaiotalk-mining"        %%      "scalaiotalk-mining"     %       "0.1"
     val commonsIO            = "org.apache.commons"        %          "commons-io"          %      "1.3.2"
     val commonsHttp          = "org.apache.httpcomponents" %          "httpclient"          %      "4.3.4"
