@@ -132,21 +132,23 @@ ls -la data
 "
 ```
 
-## Configure Hadoop with access keys
+## Configure Hadoop Configuration for spark with AWS access keys
+ **Sadly doens't seems to work => add aws keys in notebook :-/**
+
 ```
 ssh -o SendEnv -i ~/.ssh/scalaio-osm.pem root@$MASTER "
 
-# add keys to local hdfs config
-sed -i "s/<\/configuration>/  <property>\n <name>fs.s3n.awsAccessKeyId<\/name>\n <value>$AWS_ACCESS_KEY_ID<\/value>\n <\/property>\n <property>\n <name>fs.s3n.awsSecretAccessKey<\/name>\n <value>$AWS_SECRET_ACCESS_KEY<\/value>\n <\/property>\n <\/configuration>/" /root/ephemeral-hdfs/conf/core-site.xml 
+# add keys to hadoop confiug of spark
+sed -i \"s/<\/configuration>/  <property>\n <name>fs.s3n.awsAccessKeyId<\/name>\n <value>$AWS_ACCESS_KEY_ID<\/value>\n <\/property>\n <property>\n <name>fs.s3n.awsSecretAccessKey<\/name>\n <value>$AWS_SECRET_ACCESS_KEY<\/value>\n <\/property>\n <\/configuration>/\" /root/spark/conf/core-site.xml 
 
 # copy new conf everywhere
-/root/spark-ec2/copy-dir /root/ephemeral-hdfs/conf/
+/root/spark-ec2/copy-dir /root/spark/conf/
 
-# stop hdfs
-/root/ephemeral-hdfs/sbin/stop-dfs.sh 
+# stop spark
+/root/spark/sbin/stop-all.sh 
 
-# stop hdfs
-/root/ephemeral-hdfs/sbin/start-dfs.sh 
+# start spart
+/root/spark/sbin/start-all.sh 
 
 "
 ```
