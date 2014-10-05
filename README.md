@@ -14,12 +14,17 @@ tar xvzf spark.tgz
 rm spark.tgz
 ```
 
+## Setup env for AWS
+```
+export AWS_ACCESS_KEY_ID=<YOUR-AWS-ACCESS-KEY>
+export AWS_SECRET_ACCESS_KEY=<YOUR-AWS-SECRET-ACCESS-KEY>
+```
+
+
 ## Head to spark ec2
 ```
 cd spark*2.4
 cd ec2
-export AWS_ACCESS_KEY_ID=
-export AWS_SECRET_ACCESS_KEY=
 
 ./spark-ec2   -k scalaio-osm \
               -i ~/.ssh/scalaio-osm.pem \
@@ -124,6 +129,27 @@ s3cmd get s3://scalaio_osm/usa.csv data/usa.csv
 ls -la data
 /root/ephemeral-hdfs/bin/hadoop fs -mkdir /data
 /root/ephemeral-hdfs/bin/hadoop fs -put data/usa.csv /data
+"
+```
+
+## Configure Hadoop Configuration for spark with AWS access keys
+ **Sadly doens't seems to work => add aws keys in notebook :-/**
+
+```
+ssh -o SendEnv -i ~/.ssh/scalaio-osm.pem root@$MASTER "
+
+# add keys to hadoop confiug of spark
+sed -i \"s/<\/configuration>/  <property>\n <name>fs.s3n.awsAccessKeyId<\/name>\n <value>$AWS_ACCESS_KEY_ID<\/value>\n <\/property>\n <property>\n <name>fs.s3n.awsSecretAccessKey<\/name>\n <value>$AWS_SECRET_ACCESS_KEY<\/value>\n <\/property>\n <\/configuration>/\" /root/spark/conf/core-site.xml 
+
+# copy new conf everywhere
+/root/spark-ec2/copy-dir /root/spark/conf/
+
+# stop spark
+/root/spark/sbin/stop-all.sh 
+
+# start spart
+/root/spark/sbin/start-all.sh 
+
 "
 ```
 
