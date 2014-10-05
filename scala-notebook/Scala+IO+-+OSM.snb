@@ -1,8 +1,8 @@
 {
   "metadata":{
     "name":"Scala IO - OSM",
-    "user_save_timestamp":"2014-09-30T21:32:46.868Z",
-    "auto_save_timestamp":"2014-09-30T21:32:36.949Z"
+    "user_save_timestamp":"2014-10-05T12:31:52.620Z",
+    "auto_save_timestamp":"2014-10-05T13:19:30.522Z"
   },
   "worksheets":[{
     "cells":[{
@@ -10,63 +10,76 @@
       "input":"def ul[A](l:List[A])(implicit f:A=>String) = \n  <ul>{l.map(i => <li>{f(i)}</li>)}</ul>\ndef table[A](l:List[A])(implicit f:A=>List[String]) = \n  <table>{ l.map(i => <tr>{ f(i).map(x => <td>{x}</td>)}</tr>) }</table>",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":33,
+      "prompt_number":31,
       "outputs":[]
     },{
       "cell_type":"code",
       "input":"sparkContext.stop()\njars = (\"/root/spark/lib/scalaiotalk-mining_2.10.jar\" :: jars.toList).toArray\n//resolveAndAddToJars(\"org.apache.hadoop\", \"hadoop-client\", \"2.0.0-cdh4.2.0\")\nreset()",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":1,
+      "prompt_number":32,
       "outputs":[]
     },{
       "cell_type":"code",
       "input":"sparkContext.getConf.toDebugString",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":2,
+      "prompt_number":33,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"sparkContext.hadoopConfiguration.get(\"fs.s3n.awsAccessKeyId\")",
+      "language":"scala",
+      "collapsed":false,
       "outputs":[]
     },{
       "cell_type":"code",
       "input":"val masterHost = System.getenv(\"MASTER\").drop(\"spark://\".size).takeWhile(_ != ':').mkString",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":3,
+      "prompt_number":21,
       "outputs":[]
     },{
       "cell_type":"code",
       "input":"import scalaiotalk._\nval dataIn = (s:String) => s\"hdfs://$masterHost:9000/data/$s\"\nval osm = new OSM(\"usa.csv\")(sparkContext, dataIn)",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":4,
+      "prompt_number":22,
       "outputs":[]
     },{
       "cell_type":"code",
       "input":"osm.rawSections.count()",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":5,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"def (pgFile, esFile) = {\n  val run = false\n  if (run) {\n    osm.run\n    val (pg, es) = osm.asStrings\n    val id = java.util.UUID.randomUUID.toString\n    val pgFile = dataIn(s\"page-rank-result-$id.csv\")\n    val esFile = dataIn(s\"graph-edges-$id.csv\")\n    println(s\"Saving ${pg.count} page rank data to file $pgFile \")\n    pg.saveAsTextFile(pgFile)\n    println(s\"Saving ${es.count} graph edges to file $esFile\")\n    es.saveAsTextFile(esFile)\n    println(\"DONE\")\n    (pgFile, esFile)\n  } else {\n    //temp\n    val pgFile = \"page-rank-result-37c2de5a-6aab-4546-aab5-b1d09f29e76e.csv\"\n    val esFile = \"graph-edges-37c2de5a-6aab-4546-aab5-b1d09f29e76e.csv\"\n    (pgFile, esFile)\n  }\n}",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":6,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"val pg = sparkContext.textFile(dataIn(pgFile)).map(_.split(\",\").toList).cache\n  <div>Page ranks: {pg.count()}</div>\n  <table style=\"width:100%\">\n    <thead><tr><th style=\"width:50%\">id</th><th style=\"width:50%\">rank</th></tr></thead>\n  {pg.take(10).map{ case id::rank::rest => \n    <tr>\n      <td>{id}</td>\n      <td>{rank}</td>\n    </tr>\n  }}\n  </table>",
-      "language":"scala",
-      "collapsed":false,
       "prompt_number":23,
       "outputs":[]
     },{
       "cell_type":"code",
-      "input":"val es = sparkContext.textFile(dataIn(esFile)).map(_.split(\",\").toList).cache\n  <div>Edges : {es.count()}</div>\n  <table style=\"width:100%\">\n    <thead>\n    <tr>\n      <th style=\"width:25%\">source</th>\n      <th style=\"width:25%\">target</th>\n      <th style=\"width:25%\">lat</th>\n      <th style=\"width:25%\">lon</th>\n    </tr>\n    </thead>\n    <tbody>\n  {es.take(10).map{ \n    case source::target::lat::lon::xs => \n      <tr>\n      <td>{source}</td>\n      <td>{target}</td>\n      <td>{lat}</td>\n      <td>{lon}</td>\n      </tr>\n  }}\n  </tbody>\n  </table>",
+      "input":"val (pgFile, esFile) = {\n  val run = true\n  if (run) {\n    osm.run\n    val (pg, es) = osm.asStrings\n    val id = java.util.UUID.randomUUID.toString\n    val pgFile = dataIn(s\"page-rank-result-$id.csv\")\n    val esFile = dataIn(s\"graph-edges-$id.csv\")\n    println(s\"Saving ${pg.count} page rank data to file $pgFile \")\n    pg.coalesce(1, true).saveAsTextFile(pgFile)\n    println(s\"Saving ${es.count} graph edges to file $esFile\")\n    es.coalesce(1, true).saveAsTextFile(esFile)\n    println(\"DONE\")\n    (pgFile, esFile)\n  } else {\n    //temp\n    val pgFile = \"page-rank-result-66fc2882-b25a-4cbe-a171-98dd2cd19ed9.csv\"\n    val esFile = \"graph-edges-66fc2882-b25a-4cbe-a171-98dd2cd19ed9.csv\"\n    (pgFile, esFile)\n  }\n}",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":25,
+      "prompt_number":24,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"val toS3 = {\n  if (true) {\n    val bucket = \"scalaio_osm\"\n    val (pg, es) = osm.asStrings\n    pg.coalesce(1, true).saveAsTextFile(\"s3://scalaio-osm/usa-page-rank.csv\")\n    es.coalesce(1, true).saveAsTextFile(\"s3://scalaio-osm/usa-edges.csv\")\n  }  \n}",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":30,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"\tval pg = sparkContext.textFile(pgFile).map(_.split(\",\").toList).cache\n  <div>Page ranks: {pg.count()}</div>\n  <table style=\"width:100%\">\n    <thead><tr><th style=\"width:50%\">id</th><th style=\"width:50%\">rank</th></tr></thead>\n  {pg.take(10).map{ case id::rank::rest => \n    <tr>\n      <td>{id}</td>\n      <td>{rank}</td>\n    </tr>\n  }}\n  </table>",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":11,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"val es = sparkContext.textFile(esFile).map(_.split(\",\").toList).cache\n  <div>Edges : {es.count()}</div>\n  <table style=\"width:100%\">\n    <thead>\n    <tr>\n      <th style=\"width:25%\">source</th>\n      <th style=\"width:25%\">target</th>\n      <th style=\"width:25%\">lat</th>\n      <th style=\"width:25%\">lon</th>\n    </tr>\n    </thead>\n    <tbody>\n  {es.take(10).map{ \n    case source::target::lat::lon::xs => \n      <tr>\n      <td>{source}</td>\n      <td>{target}</td>\n      <td>{lat}</td>\n      <td>{lon}</td>\n      </tr>\n  }}\n  </tbody>\n  </table>",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":12,
       "outputs":[]
     },{
       "cell_type":"markdown",
@@ -76,7 +89,7 @@
       "input":"ul(pg.top(10)(scala.math.Ordering.by[List[String], Double]{ (l:List[String]) => l(1).toDouble }).toList) {\n  case i::r::Nil => s\"Rank of $i → $r\"\n}",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":36,
+      "prompt_number":13,
       "outputs":[]
     },{
       "cell_type":"code",
@@ -86,6 +99,101 @@
       "outputs":[]
     }]
   }],
-  "autosaved":[],
+  "autosaved":[{
+    "cells":[{
+      "cell_type":"code",
+      "input":"def ul[A](l:List[A])(implicit f:A=>String) = \n  <ul>{l.map(i => <li>{f(i)}</li>)}</ul>\ndef table[A](l:List[A])(implicit f:A=>List[String]) = \n  <table>{ l.map(i => <tr>{ f(i).map(x => <td>{x}</td>)}</tr>) }</table>",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":7,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"sparkContext.stop()\njars = (\"/root/spark/lib/scalaiotalk-mining_2.10.jar\" :: jars.toList).toArray\nreset()",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":8,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"sparkContext.getConf.toDebugString",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":9,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"// sadly add keys over here...\nsparkContext.hadoopConfiguration.set(\"fs.s3n.awsAccessKeyId\", KEY_ID)\nsparkContext.hadoopConfiguration.set(\"fs.s3n.awsSecretAccessKey\", SECRET_KEY)\n",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":11,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"val masterHost = System.getenv(\"MASTER\").drop(\"spark://\".size).takeWhile(_ != ':').mkString",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":12,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"import scalaiotalk._\nval dataIn = (s:String) => s\"hdfs://$masterHost:9000/data/$s\"\nval osm = new OSM(\"usa.csv\")(sparkContext, dataIn)",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":13,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"osm.rawSections.count()",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":14,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"val (pgFile, esFile) = {\n  val run = true\n  if (run) {\n    osm.run\n    val (pg, es) = osm.asStrings\n    val id = java.util.UUID.randomUUID.toString\n    val pgFile = dataIn(s\"page-rank-result-$id.csv\")\n    val esFile = dataIn(s\"graph-edges-$id.csv\")\n    println(s\"Saving ${pg.count} page rank data to file $pgFile \")\n    pg.coalesce(1, true).saveAsTextFile(pgFile)\n    println(s\"Saving ${es.count} graph edges to file $esFile\")\n    es.coalesce(1, true).saveAsTextFile(esFile)\n    println(\"DONE\")\n    (pgFile, esFile)\n  } else {\n    //temp\n    val pgFile = \"page-rank-result-66fc2882-b25a-4cbe-a171-98dd2cd19ed9.csv\"\n    val esFile = \"graph-edges-66fc2882-b25a-4cbe-a171-98dd2cd19ed9.csv\"\n    (pgFile, esFile)\n  }\n}",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":15,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"val toS3 = {\n  if (true) {\n    val bucket = \"scalaio_osm\"\n    val (pg, es) = osm.asStrings\n    pg.coalesce(1, true).saveAsTextFile(\"s3n://scalaio-osm/usa-page-rank.csv\")\n    es.coalesce(1, true).saveAsTextFile(\"s3n://scalaio-osm/usa-edges.csv\")\n  }  \n}",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":16,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"\tval pg = sparkContext.textFile(pgFile).map(_.split(\",\").toList).cache\n  <div>Page ranks: {pg.count()}</div>\n  <table style=\"width:100%\">\n    <thead><tr><th style=\"width:50%\">id</th><th style=\"width:50%\">rank</th></tr></thead>\n  {pg.take(10).map{ case id::rank::rest => \n    <tr>\n      <td>{id}</td>\n      <td>{rank}</td>\n    </tr>\n  }}\n  </table>",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":11,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"val es = sparkContext.textFile(esFile).map(_.split(\",\").toList).cache\n  <div>Edges : {es.count()}</div>\n  <table style=\"width:100%\">\n    <thead>\n    <tr>\n      <th style=\"width:25%\">source</th>\n      <th style=\"width:25%\">target</th>\n      <th style=\"width:25%\">lat</th>\n      <th style=\"width:25%\">lon</th>\n    </tr>\n    </thead>\n    <tbody>\n  {es.take(10).map{ \n    case source::target::lat::lon::xs => \n      <tr>\n      <td>{source}</td>\n      <td>{target}</td>\n      <td>{lat}</td>\n      <td>{lon}</td>\n      </tr>\n  }}\n  </tbody>\n  </table>",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":12,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"# 10 Top Ranks"
+    },{
+      "cell_type":"code",
+      "input":"ul(pg.top(10)(scala.math.Ordering.by[List[String], Double]{ (l:List[String]) => l(1).toDouble }).toList) {\n  case i::r::Nil => s\"Rank of $i → $r\"\n}",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":13,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"",
+      "language":"scala",
+      "collapsed":true,
+      "outputs":[]
+    }]
+  }],
   "nbformat":3
 }
