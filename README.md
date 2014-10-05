@@ -25,8 +25,6 @@ export AWS_SECRET_ACCESS_KEY=<YOUR-AWS-SECRET-ACCESS-KEY>
 ```
 cd spark*2.4
 cd ec2
-export AWS_ACCESS_KEY_ID=
-export AWS_SECRET_ACCESS_KEY=
 
 ./spark-ec2   -k scalaio-osm \
               -i ~/.ssh/scalaio-osm.pem \
