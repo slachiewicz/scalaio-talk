@@ -132,6 +132,25 @@ ls -la data
 "
 ```
 
+## Configure Hadoop with access keys
+```
+ssh -o SendEnv -i ~/.ssh/scalaio-osm.pem root@$MASTER "
+
+# add keys to local hdfs config
+sed -i "s/<\/configuration>/  <property>\n <name>fs.s3n.awsAccessKeyId<\/name>\n <value>$AWS_ACCESS_KEY_ID<\/value>\n <\/property>\n <property>\n <name>fs.s3n.awsSecretAccessKey<\/name>\n <value>$AWS_SECRET_ACCESS_KEY<\/value>\n <\/property>\n <\/configuration>/" /root/ephemeral-hdfs/conf/core-site.xml 
+
+# copy new conf everywhere
+/root/spark-ec2/copy-dir /root/ephemeral-hdfs/conf/
+
+# stop hdfs
+/root/ephemeral-hdfs/sbin/stop-dfs.sh 
+
+# stop hdfs
+/root/ephemeral-hdfs/sbin/start-dfs.sh 
+
+"
+```
+
 ## Upload, setup project (incl scala-notebook)
 ```
 ssh -i ~/.ssh/scalaio-osm.pem root@$MASTER <<'ENDSSH'
