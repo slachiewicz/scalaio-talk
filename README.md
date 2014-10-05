@@ -14,6 +14,13 @@ tar xvzf spark.tgz
 rm spark.tgz
 ```
 
+## Setup env for AWS
+```
+export AWS_ACCESS_KEY_ID=<YOUR-AWS-ACCESS-KEY>
+export AWS_SECRET_ACCESS_KEY=<YOUR-AWS-SECRET-ACCESS-KEY>
+```
+
+
 ## Head to spark ec2
 ```
 cd spark*2.4
