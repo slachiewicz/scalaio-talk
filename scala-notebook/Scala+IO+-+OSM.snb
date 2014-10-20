@@ -1,8 +1,8 @@
 {
   "metadata":{
     "name":"Scala IO - OSM",
-    "user_save_timestamp":"2014-10-05T12:31:52.620Z",
-    "auto_save_timestamp":"2014-10-05T13:19:30.522Z"
+    "user_save_timestamp":"2014-10-20T23:41:06.588Z",
+    "auto_save_timestamp":"2014-10-20T23:33:38.930Z"
   },
   "worksheets":[{
     "cells":[{
@@ -10,172 +10,110 @@
       "input":"def ul[A](l:List[A])(implicit f:A=>String) = \n  <ul>{l.map(i => <li>{f(i)}</li>)}</ul>\ndef table[A](l:List[A])(implicit f:A=>List[String]) = \n  <table>{ l.map(i => <tr>{ f(i).map(x => <td>{x}</td>)}</tr>) }</table>",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":31,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"sparkContext.stop()\njars = (\"/root/spark/lib/scalaiotalk-mining_2.10.jar\" :: jars.toList).toArray\n//resolveAndAddToJars(\"org.apache.hadoop\", \"hadoop-client\", \"2.0.0-cdh4.2.0\")\nreset()",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":32,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"sparkContext.getConf.toDebugString",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":33,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"sparkContext.hadoopConfiguration.get(\"fs.s3n.awsAccessKeyId\")",
-      "language":"scala",
-      "collapsed":false,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"val masterHost = System.getenv(\"MASTER\").drop(\"spark://\".size).takeWhile(_ != ':').mkString",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":21,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"import scalaiotalk._\nval dataIn = (s:String) => s\"hdfs://$masterHost:9000/data/$s\"\nval osm = new OSM(\"usa.csv\")(sparkContext, dataIn)",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":22,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"osm.rawSections.count()",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":23,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"val (pgFile, esFile) = {\n  val run = true\n  if (run) {\n    osm.run\n    val (pg, es) = osm.asStrings\n    val id = java.util.UUID.randomUUID.toString\n    val pgFile = dataIn(s\"page-rank-result-$id.csv\")\n    val esFile = dataIn(s\"graph-edges-$id.csv\")\n    println(s\"Saving ${pg.count} page rank data to file $pgFile \")\n    pg.coalesce(1, true).saveAsTextFile(pgFile)\n    println(s\"Saving ${es.count} graph edges to file $esFile\")\n    es.coalesce(1, true).saveAsTextFile(esFile)\n    println(\"DONE\")\n    (pgFile, esFile)\n  } else {\n    //temp\n    val pgFile = \"page-rank-result-66fc2882-b25a-4cbe-a171-98dd2cd19ed9.csv\"\n    val esFile = \"graph-edges-66fc2882-b25a-4cbe-a171-98dd2cd19ed9.csv\"\n    (pgFile, esFile)\n  }\n}",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":24,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"val toS3 = {\n  if (true) {\n    val bucket = \"scalaio_osm\"\n    val (pg, es) = osm.asStrings\n    pg.coalesce(1, true).saveAsTextFile(\"s3://scalaio-osm/usa-page-rank.csv\")\n    es.coalesce(1, true).saveAsTextFile(\"s3://scalaio-osm/usa-edges.csv\")\n  }  \n}",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":30,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"\tval pg = sparkContext.textFile(pgFile).map(_.split(\",\").toList).cache\n  <div>Page ranks: {pg.count()}</div>\n  <table style=\"width:100%\">\n    <thead><tr><th style=\"width:50%\">id</th><th style=\"width:50%\">rank</th></tr></thead>\n  {pg.take(10).map{ case id::rank::rest => \n    <tr>\n      <td>{id}</td>\n      <td>{rank}</td>\n    </tr>\n  }}\n  </table>",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":11,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"val es = sparkContext.textFile(esFile).map(_.split(\",\").toList).cache\n  <div>Edges : {es.count()}</div>\n  <table style=\"width:100%\">\n    <thead>\n    <tr>\n      <th style=\"width:25%\">source</th>\n      <th style=\"width:25%\">target</th>\n      <th style=\"width:25%\">lat</th>\n      <th style=\"width:25%\">lon</th>\n    </tr>\n    </thead>\n    <tbody>\n  {es.take(10).map{ \n    case source::target::lat::lon::xs => \n      <tr>\n      <td>{source}</td>\n      <td>{target}</td>\n      <td>{lat}</td>\n      <td>{lon}</td>\n      </tr>\n  }}\n  </tbody>\n  </table>",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":12,
+      "prompt_number":205,
       "outputs":[]
     },{
       "cell_type":"markdown",
-      "source":"# 10 Top Ranks"
-    },{
-      "cell_type":"code",
-      "input":"ul(pg.top(10)(scala.math.Ordering.by[List[String], Double]{ (l:List[String]) => l(1).toDouble }).toList) {\n  case i::r::Nil => s\"Rank of $i → $r\"\n}",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":13,
-      "outputs":[]
-    },{
-      "cell_type":"code",
-      "input":"",
-      "language":"scala",
-      "collapsed":true,
-      "outputs":[]
-    }]
-  }],
-  "autosaved":[{
-    "cells":[{
-      "cell_type":"code",
-      "input":"def ul[A](l:List[A])(implicit f:A=>String) = \n  <ul>{l.map(i => <li>{f(i)}</li>)}</ul>\ndef table[A](l:List[A])(implicit f:A=>List[String]) = \n  <table>{ l.map(i => <tr>{ f(i).map(x => <td>{x}</td>)}</tr>) }</table>",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":7,
-      "outputs":[]
+      "source":"### Load the talk's jar in the context"
     },{
       "cell_type":"code",
       "input":"sparkContext.stop()\njars = (\"/root/spark/lib/scalaiotalk-mining_2.10.jar\" :: jars.toList).toArray\nreset()",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":8,
+      "prompt_number":206,
       "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Check we're running in the cluster with the right deps. "
     },{
       "cell_type":"code",
       "input":"sparkContext.getConf.toDebugString",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":9,
+      "prompt_number":207,
       "outputs":[]
     },{
+      "cell_type":"markdown",
+      "source":"The following is needed to save in S3"
+    },{
       "cell_type":"code",
-      "input":"// sadly add keys over here...\nsparkContext.hadoopConfiguration.set(\"fs.s3n.awsAccessKeyId\", KEY_ID)\nsparkContext.hadoopConfiguration.set(\"fs.s3n.awsSecretAccessKey\", SECRET_KEY)\n",
+      "input":"// sadly add keys over here...\nval KEY_ID:String = \"\"\nval SECRET_KEY_ID:String = \"\"\nsparkContext.hadoopConfiguration.set(\"fs.s3n.awsAccessKeyId\", KEY_ID)\nsparkContext.hadoopConfiguration.set(\"fs.s3n.awsSecretAccessKey\", SECRET_KEY_ID)\n",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":11,
+      "prompt_number":208,
       "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Here is the master hostname (helpful for hdfs url building)"
     },{
       "cell_type":"code",
       "input":"val masterHost = System.getenv(\"MASTER\").drop(\"spark://\".size).takeWhile(_ != ':').mkString",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":12,
+      "prompt_number":209,
       "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"## Time to use the talk's logic running on the whole USA"
     },{
       "cell_type":"code",
       "input":"import scalaiotalk._\nval dataIn = (s:String) => s\"hdfs://$masterHost:9000/data/$s\"\nval osm = new OSM(\"usa.csv\")(sparkContext, dataIn)",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":13,
+      "prompt_number":210,
       "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Here is the number of raw sections we have in the original data"
     },{
       "cell_type":"code",
       "input":"osm.rawSections.count()",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":14,
+      "prompt_number":211,
       "outputs":[]
     },{
-      "cell_type":"code",
-      "input":"val (pgFile, esFile) = {\n  val run = true\n  if (run) {\n    osm.run\n    val (pg, es) = osm.asStrings\n    val id = java.util.UUID.randomUUID.toString\n    val pgFile = dataIn(s\"page-rank-result-$id.csv\")\n    val esFile = dataIn(s\"graph-edges-$id.csv\")\n    println(s\"Saving ${pg.count} page rank data to file $pgFile \")\n    pg.coalesce(1, true).saveAsTextFile(pgFile)\n    println(s\"Saving ${es.count} graph edges to file $esFile\")\n    es.coalesce(1, true).saveAsTextFile(esFile)\n    println(\"DONE\")\n    (pgFile, esFile)\n  } else {\n    //temp\n    val pgFile = \"page-rank-result-66fc2882-b25a-4cbe-a171-98dd2cd19ed9.csv\"\n    val esFile = \"graph-edges-66fc2882-b25a-4cbe-a171-98dd2cd19ed9.csv\"\n    (pgFile, esFile)\n  }\n}",
-      "language":"scala",
-      "collapsed":false,
-      "prompt_number":15,
-      "outputs":[]
+      "cell_type":"markdown",
+      "source":"We can now get the result as string to persist in HDFS"
     },{
       "cell_type":"code",
-      "input":"val toS3 = {\n  if (true) {\n    val bucket = \"scalaio_osm\"\n    val (pg, es) = osm.asStrings\n    pg.coalesce(1, true).saveAsTextFile(\"s3n://scalaio-osm/usa-page-rank.csv\")\n    es.coalesce(1, true).saveAsTextFile(\"s3n://scalaio-osm/usa-edges.csv\")\n  }  \n}",
+      "input":"val (pgFile, esFile) = {\n    osm.run\n    val (pg, es) = osm.asStrings\n    val id = java.util.UUID.randomUUID.toString\n    val pgFile = dataIn(s\"page-rank-result-$id.csv\")\n    val esFile = dataIn(s\"graph-edges-$id.csv\")\n    if (true) {\n      println(s\"Saving ${pg.count} page rank data to file $pgFile \")\n      pg.coalesce(1, true).saveAsTextFile(pgFile)\n      println(s\"Saving ${es.count} graph edges to file $esFile\")\n      es.coalesce(1, true).saveAsTextFile(esFile)\n    }\n    println(\"DONE\")\n    (pgFile, esFile)\n}",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":16,
+      "prompt_number":212,
       "outputs":[]
     },{
+      "cell_type":"markdown",
+      "source":"Sounds good, we can now persist in S3 as well "
+    },{
       "cell_type":"code",
-      "input":"\tval pg = sparkContext.textFile(pgFile).map(_.split(\",\").toList).cache\n  <div>Page ranks: {pg.count()}</div>\n  <table style=\"width:100%\">\n    <thead><tr><th style=\"width:50%\">id</th><th style=\"width:50%\">rank</th></tr></thead>\n  {pg.take(10).map{ case id::rank::rest => \n    <tr>\n      <td>{id}</td>\n      <td>{rank}</td>\n    </tr>\n  }}\n  </table>",
+      "input":"val toS3 = {\n  if (false) {\n    val bucket = \"scalaio_osm\"\n    val (pg, es) = osm.asStrings\n    pg.coalesce(1, true).saveAsTextFile(\"s3n://scalaio-osm/usa-page-rank.csv\")\n    es.coalesce(1, true).saveAsTextFile(\"s3n://scalaio-osm/usa-edges.csv\")\n  }  \n}",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":11,
+      "prompt_number":213,
       "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"## Some insights in the results"
+    },{
+      "cell_type":"markdown",
+      "source":"### First the page ranks"
+    },{
+      "cell_type":"code",
+      "input":"val pg = sparkContext.textFile(pgFile).map(_.split(\",\").toList).cache\n  <div>Page ranks: {pg.count()}</div>\n  <table style=\"width:100%\">\n    <thead><tr><th style=\"width:50%\">id</th><th style=\"width:50%\">rank</th></tr></thead>\n  {pg.take(10).filter(_.size < 2).map{ \n    case id::rank::rest => \n    <tr>\n      <td>{id}</td>\n      <td>{rank}</td>\n    </tr>\n  }}\n  </table>",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":214,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"### Second the edges"
     },{
       "cell_type":"code",
       "input":"val es = sparkContext.textFile(esFile).map(_.split(\",\").toList).cache\n  <div>Edges : {es.count()}</div>\n  <table style=\"width:100%\">\n    <thead>\n    <tr>\n      <th style=\"width:25%\">source</th>\n      <th style=\"width:25%\">target</th>\n      <th style=\"width:25%\">lat</th>\n      <th style=\"width:25%\">lon</th>\n    </tr>\n    </thead>\n    <tbody>\n  {es.take(10).map{ \n    case source::target::lat::lon::xs => \n      <tr>\n      <td>{source}</td>\n      <td>{target}</td>\n      <td>{lat}</td>\n      <td>{lon}</td>\n      </tr>\n  }}\n  </tbody>\n  </table>",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":12,
+      "prompt_number":215,
       "outputs":[]
     },{
       "cell_type":"markdown",
@@ -185,15 +123,179 @@
       "input":"ul(pg.top(10)(scala.math.Ordering.by[List[String], Double]{ (l:List[String]) => l(1).toDouble }).toList) {\n  case i::r::Nil => s\"Rank of $i → $r\"\n}",
       "language":"scala",
       "collapsed":false,
-      "prompt_number":13,
+      "prompt_number":216,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"### Recover the city (lost while appending files)"
+    },{
+      "cell_type":"markdown",
+      "source":"#### Read the data again (usa.csv)"
+    },{
+      "cell_type":"code",
+      "input":"val hdfs = s\"hdfs://$masterHost:9000\"\nval csvFile = \"/data/usa.csv\" \nval d = sparkContext.textFile(s\"$hdfs/$csvFile\")",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":217,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"#### Check what it looks like (String)"
+    },{
+      "cell_type":"code",
+      "input":"ul(d.take(1).toList)",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":218,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"As we can see, the line ends with a boolean, but the value which is preceded by the **Section ID** !"
+    },{
+      "cell_type":"markdown",
+      "source":"Since the original city files were composing the usa.csv file, they have the same structure. So we can \n\n * read them all\n * extract the section ids\n * map with the city name"
+    },{
+      "cell_type":"code",
+      "input":"// Hardcoded list of the cities in HDFS\nval cities = List(\"albany_sections.csv\",\n\"arlington_sections.csv\",\n\"atlanta_sections.csv\",\n\"austin_sections.csv\",\n\"baltimore_sections.csv\",\n\"baton-rouge_sections.csv\",\n\"beaverton_sections.csv\",\n\"bellevue_sections.csv\",\n\"berkeley_sections.csv\",\n\"boise_sections.csv\",\n\"boston_sections.csv\",\n\"buffalo_sections.csv\",\n\"charlotte_sections.csv\",\n\"chicago_sections.csv\",\n\"cleveland_sections.csv\",\n\"colorado-springs_sections.csv\",\n\"columbia_sections.csv\",\n\"columbus_sections.csv\",\n\"dallas_sections.csv\",\n\"dayton_sections.csv\",\n\"denver_sections.csv\",\n\"des-moines_sections.csv\",\n\"durham_sections.csv\",\n\"eugene_sections.csv\",\n\"fort-worth_sections.csv\",\n\"gainesville_sections.csv\",\n\"grand-rapids_sections.csv\",\n\"greensboro_sections.csv\",\n\"greenville_sections.csv\",\n\"honolulu_sections.csv\",\n\"indianapolis_sections.csv\",\n\"irvine_sections.csv\",\n\"jacksonville_sections.csv\",\n\"jackson_sections.csv\",\n\"kansas-city_sections.csv\",\n\"knoxville_sections.csv\",\n\"las-vegas_sections.csv\",\n\"lincoln_sections.csv\",\n\"los-angeles_sections.csv\",\n\"lubbock_sections.csv\",\n\"madison_sections.csv\",\n\"memphis_sections.csv\",\n\"mesa_sections.csv\",\n\"miami_sections.csv\",\n\"milwaukee_sections.csv\",\n\"nashville_sections.csv\",\n\"newark_sections.csv\",\n\"new-orleans_sections.csv\",\n\"norfolk_sections.csv\",\n\"nyc_sections.csv\",\n\"oakland_sections.csv\",\n\"oklahoma-city_sections.csv\",\n\"omaha_sections.csv\",\n\"orlando_sections.csv\",\n\"philadelphia_sections.csv\",\n\"phoenix_sections.csv\",\n\"plano_sections.csv\",\n\"portland_sections.csv\",\n\"providence_sections.csv\",\n\"raleigh_sections.csv\",\n\"reno_sections.csv\",\n\"richmond_sections.csv\",\n\"rochester_sections.csv\",\n\"sacramento_sections.csv\",\n\"salt-lake-city_sections.csv\",\n\"san-antonio_sections.csv\",\n\"san-diego_sections.csv\",\n\"san-francisco_sections.csv\",\n\"san-josé_sections.csv\",\n\"scottsdale_sections.csv\",\n\"seattle_sections.csv\",\n\"spokane_sections.csv\",\n\"springfield_sections.csv\",\n\"st-louis_sections.csv\",\n\"st-paul_sections.csv\",\n\"sunnyvale_sections.csv\",\n\"tampa_sections.csv\",\n\"tempe_sections.csv\",\n\"tucson_sections.csv\",\n\"tulsa_sections.csv\",\n\"wichita_sections.csv\")\n  ",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":219,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Build an **RDD** for each city"
+    },{
+      "cell_type":"code",
+      "input":"val citiesRdd = cities.map(city => (city, sparkContext.textFile(dataIn(city))))",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":220,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Sanity check of the content (id is still preceeding the boolean value)"
+    },{
+      "cell_type":"code",
+      "input":"citiesRdd.take(1).head._2.take(1000).drop(999).head",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":221,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Extract the Section Id and keep the **long hash** of it (to cope with the OSM process)"
+    },{
+      "cell_type":"code",
+      "input":"val citySectionIds = citiesRdd.map { case (city, rdd) => \n  (city, rdd.map(x => scalaiotalk.Util.hash(x.split(\",\").toList.reverse.drop(1).head)) )\n}",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":222,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Check that we have Longs!"
+    },{
+      "cell_type":"code",
+      "input":"citySectionIds.head._2.take(2).toList",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":223,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"### Now we can restart working using the computing ranks"
+    },{
+      "cell_type":"code",
+      "input":"val pgRdd = osm.asStrings._1\n",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":224,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Remind that it contains __Strings__ composed of the Section Id (Long) and the rank (Double)"
+    },{
+      "cell_type":"code",
+      "input":"pgRdd.cache\npgRdd.name = \"page ranks\"\nul(pgRdd.take(2).toList)",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":225,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Insert the city name into all RDD (resp.)"
+    },{
+      "cell_type":"code",
+      "input":"val citySectionIdsNested = citySectionIds.map { case (city, rdd) => rdd.map(x => (city, x)) }.toSeq\n",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":226,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Union all cities RDD to form only one RDD containing all sections ids along with their city of origin."
+    },{
+      "cell_type":"code",
+      "input":"val allCities = sparkContext.union(citySectionIdsNested.toList).map(_.swap).cache",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":227,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Check the content of this single RDD."
+    },{
+      "cell_type":"code",
+      "input":"ul(allCities.take(2).map(_.toString).toList)",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":228,
+      "outputs":[]
+    },{
+      "cell_type":"code",
+      "input":"import org.apache.spark.SparkContext._ // for the Pair functions  →→ join, see below",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":229,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Now we can convert the rank and sections ids in tuples again, **then** join it with the cities information. The join will operate on the **hashed section id**."
+    },{
+      "cell_type":"code",
+      "input":"val joined = pgRdd.map(_.split(\",\").toList).map{case id::r::Nil => (id.toLong, r.toDouble)}.join(allCities)",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":230,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"Check what kind of result we do have!"
+    },{
+      "cell_type":"code",
+      "input":"ul(joined.take(10).map(_.toString).toList)",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":231,
+      "outputs":[]
+    },{
+      "cell_type":"markdown",
+      "source":"### Save the result in S3"
+    },{
+      "cell_type":"code",
+      "input":"val toS3_2 = {\n  if (false) {\n    val bucket = \"scalaio_osm\"\n    joined.coalesce(1, true).saveAsTextFile(\"s3n://scalaio-osm/usa-cities-page-rank.csv\")\n  }  \n}",
+      "language":"scala",
+      "collapsed":false,
+      "prompt_number":232,
       "outputs":[]
     },{
       "cell_type":"code",
       "input":"",
       "language":"scala",
-      "collapsed":true,
+      "collapsed":false,
       "outputs":[]
     }]
   }],
+  "autosaved":[],
   "nbformat":3
 }

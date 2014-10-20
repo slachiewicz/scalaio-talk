@@ -70,8 +70,8 @@ class OSM(csvFile: String)(implicit sparkContext: SparkContext, dataIn: (String 
             val section = stringToSectionData(coordsString)
             // keep the hash of the section's uuid (same reason as for the point)
             // coords is the list of coordinates participating to this section
-            val SectionId: SectionId = hash(uuid)
-            (SectionId, section)
+            val sectionId: SectionId = hash(uuid)
+            (sectionId, section)
           }.toOption
         }.collect {
           case Some(x) => x
@@ -111,7 +111,7 @@ class OSM(csvFile: String)(implicit sparkContext: SparkContext, dataIn: (String 
             throw new Exception("Should not happen!")
         }
     }
-    // ↓↓↓ SHOULDN'T BE NEEDED ANYMORE 
+    // ↓↓↓ SHOULDN'T BE NEEDED ANYMORE
     //.distinct
   }
 
