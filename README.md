@@ -125,10 +125,15 @@ KEY
 s3cmd ls s3://scalaio_osm/
 
 mkdir -p data
-s3cmd get s3://scalaio_osm/usa.csv data/usa.csv
-ls -la data
+s3cmd get s3://scalaio-osm/usa.csv data/usa.csv
+s3cmd get s3://scalaio-osm/usa_sections.tar.gz data/usa_sections.tar.gz
+
+cd data
+tar xvzf usa_sections.tar.gz
+
+ls -la .
 /root/ephemeral-hdfs/bin/hadoop fs -mkdir /data
-/root/ephemeral-hdfs/bin/hadoop fs -put data/usa.csv /data
+/root/ephemeral-hdfs/bin/hadoop fs -put *.csv /data
 "
 ```
 
