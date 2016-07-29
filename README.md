@@ -6,10 +6,9 @@ s3://scalaio_osm/usa.csv
 
 ## DL default spark dist :
 
-*We use hadoop 2 !!! because of https://issues.apache.org/jira/browse/SPARK-2075*
-
+Spark 2.0 + Hadoop 2.7
 ```
-curl http://d3kbcqa49mib13.cloudfront.net/spark-1.1.0-bin-hadoop2.4.tgz > spark.tgz
+curl http://d3kbcqa49mib13.cloudfront.net/spark-2.0.0-bin-hadoop2.7.tgz > spark.tgz
 tar xvzf spark.tgz
 rm spark.tgz
 ```
@@ -23,7 +22,7 @@ export AWS_SECRET_ACCESS_KEY=<YOUR-AWS-SECRET-ACCESS-KEY>
 
 ## Head to spark ec2
 ```
-cd spark*2.4
+cd spark*2.7
 cd ec2
 
 ./spark-ec2   -k scalaio-osm \
